@@ -16,8 +16,8 @@ server_socket = host()
 
 connection1 = server_socket.accept()[0].makefile('rb')
 
-print("1")
-connection2 = server_socket.accept()[0].makefile('rb')
 
-print("2")
+connection2 = server_socket.accept()
+
+
 

@@ -52,33 +52,33 @@ class WebcamVideoStream:
     def read(self):
         return self.frame
 
-    
-
 # Start a socket listening for connections on 0.0.0.0:8000 (0.0.0.0 means
 # all interfaces)
 server_socket = socket.socket()
 server_socket.bind(('192.168.2.10', 8000))
-server_socket.listen(0)
+server_socket.listen(2)
 
 # Accept a single connection and make a file-like object out of it
-connection = server_socket.accept()[0].makefile('rb')
+video_connection = server_socket.accept()[0].makefile('rb')
 
 
-stream = WebcamVideoStream().start(connection)
-i=0
+stream = WebcamVideoStream().start(video_connection)
+
 
 f = open("test.txt","a")
 
 try:
+    i=0
     while stream.loop:
-        if(stream.ready and stream.new):
+        if(stream.ready):
             image = stream.read()
-            
             cv2.imshow('image',image)
-            cv2.imwrite("IMG/test%d.jpg" %i,image)
-            i +=1
-            path = os.path.abspath("IMG/test%d.jpg, %d \n" %(i,2*i))
-            f.write(path)
+            
+            if(stream.new):
+                cv2.imwrite("IMG/test%d.jpg" %i,image)
+                i +=1
+                path = os.path.abspath("IMG/test%d.jpg, %d \n" %(i,2*i))
+                f.write(path)
             
             cv2.waitKey(1)     
             stream.new = False

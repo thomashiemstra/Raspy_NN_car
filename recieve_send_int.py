@@ -9,7 +9,7 @@ from PIL import Image
 
 import io
 
-ser = serial.Serial("COM11",115200)
+ser = serial.Serial("COM8",115200)
 sleep(2)
 data = [0,0]
 
@@ -24,9 +24,9 @@ def host():
 	s.listen(2)
 	return s
 
-server_socket = host()
-c, addr = server_socket.accept()
-print("got connection from",addr)
+#server_socket = host()
+#c, addr = server_socket.accept()
+#print("got connection from",addr)
 
 
 try:
@@ -36,12 +36,10 @@ try:
         tempY = ser.read(2)
         data[0] = struct.unpack('h',tempX)[0]
         data[1] = struct.unpack('h',tempY)[0]
-#        print(data)
-        data_string = pickle.dumps(data)
-        c.send(data_string)
-        
-        
-        sleep(0.1)
+        print(data)
+#        data_string = pickle.dumps(data)
+#        c.send(data_string)r
+        sleep(0.01)
         
 except KeyboardInterrupt:
     ser.close()   
