@@ -6,8 +6,12 @@ from PIL import Image
 import io
 import serial
 import pickle
+import os
 from threading import Thread
 from time import sleep
+
+def map(x, in_min, in_max, out_min, out_max):
+    return int((x-in_min) * (out_max-out_min) / (in_max-in_min) + out_min)
 
 #constanly updates the member variable "frame" and returns it when read() is called
 class WebcamVideoStream:
@@ -28,8 +32,8 @@ class WebcamVideoStream:
             while True:
                 if self.stopped:
                     break
-                
                 image_len = struct.unpack('<L', connection.read(struct.calcsize('<L')))[0]
+                                
                 if not image_len:
                     break
                 # Construct a stream to hold the image data and read the image
@@ -56,16 +60,16 @@ class WebcamVideoStream:
 
 
 def host_connections():
-    serial_connection = serial.Serial("COM8",115200)
+    serial_connection = serial.Serial("COM11",115200)
     
-    host = '192.168.2.10' #ip of computer
+    host = '192.168.2.6' #ip of computer
     port = 8000
     
     server_socket = socket.socket()
     server_socket.bind((host, port))
     server_socket.listen(2)
     
-    # start the video streaming connection and start the video streaming processing thread
+    # start the video streaming connection 
     video_connection = server_socket.accept()[0].makefile('rb')
     
     # start the connection that sends controlls to the car
@@ -75,31 +79,55 @@ def host_connections():
 
 def send_commands(connection, ser):
     data = [0,0]
-    
     ser.flushInput()
+    
     tempX = ser.read(2)
     tempY = ser.read(2)
+    temp = ser.read(2)
+    
     data[0] = struct.unpack('h',tempX)[0]
     data[1] = struct.unpack('h',tempY)[0]
+    trigger = struct.unpack('h',temp)[0]
+    
     data_string = pickle.dumps(data)
     connection.send(data_string)
+    
+    speed = int(data[0]) 
+    steering = int(data[1]) - 492
+
+    fac = (map(steering,-492,531,-400,400))/400
+    return trigger, speed, fac
 
 
 if __name__ == "__main__":	
 
     video_connection, controll_connection, serial_connection = host_connections()
-    
     stream = WebcamVideoStream().start(video_connection)
     
+    f = open("driving_log.csv","a")
+    trigger = 0
+    i = 0
+
     try:
         while stream.loop:
             if(stream.ready):
+
+                trigger, speed, steering = send_commands(controll_connection, serial_connection)
                 image = stream.read()
+                cv2.namedWindow('image',cv2.WINDOW_NORMAL)
+                cv2.resizeWindow('image', 960,720)
                 cv2.imshow('image',image)
-                cv2.waitKey(1)     
+                cv2.waitKey(1)  
+                
+                if(stream.new and trigger):
+                    
+                    cv2.imwrite("IMG/image_%d.jpg" %i,image)
+                    path = os.path.abspath("IMG/image_%d.jpg, %d, %.3f \n" %(i, speed, steering))
+                    f.write(path)
+                    i += 1
+               
                 stream.new = False
                 
-            send_commands(controll_connection, serial_connection)
             sleep(0.01)
             
     except KeyboardInterrupt:
@@ -111,4 +139,5 @@ if __name__ == "__main__":
         controll_connection.close()
         video_connection.close()
         serial_connection.close()
+        f.close()
 

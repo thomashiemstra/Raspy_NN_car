@@ -26,15 +26,14 @@ def map(x, in_min, in_max, out_min, out_max):
     return int((x-in_min) * (out_max-out_min) / (in_max-in_min) + out_min)
     
 def set_motors(arr):
-    speed = int(arr[0]) 
-    steering = int(arr[1]) - 492
-
-    fac = (map(steering,-492,531,-400,400))/400
+    speed = int(arr[0])
+    fac = arr[1]
+    
     if(fac>1):
         fac = 1
     if(fac<-1):
         fac = -1
-
+    
     if(speed >= 0):
         if(speed > 100):
             speed = 100
@@ -137,6 +136,8 @@ if __name__ == "__main__":
         pass
 
     finally:
+        right.ChangeDutyCycle(0)  
+        left.ChangeDutyCycle(0)  
         run_event.clear()
         t.join()
         video_connection.close()
