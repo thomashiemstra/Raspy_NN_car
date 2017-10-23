@@ -2,10 +2,37 @@ import cv2, os
 import numpy as np
 import matplotlib.image as mpimg
 
-
 IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS = 66, 200, 3
 INPUT_SHAPE = (IMAGE_HEIGHT, IMAGE_WIDTH, IMAGE_CHANNELS)
 
+def load_config():
+    with np.load('cam.npz') as calibData:
+        mtx, dist = [calibData[i] for i in ('mtx', 'dist')]
+    return mtx,dist
+
+# Remove distortion from images
+def undistort(image, mtx, dist, show=True, read = True):
+    
+#    img = cv2.imread(image)
+    img = image
+    undist = cv2.undistort(img, mtx, dist, None, mtx)
+    return undist
+        
+# Perform perspective transform
+def birds_eye(img, mtx, dist):
+
+    undist = undistort(img, mtx, dist, show = False)
+    img_size = (undist.shape[1], undist.shape[0])
+    
+    src = np.float32([[0, 140],[320, 140],
+                      [320, 240],[0, 240]])
+    
+    dst = np.float32([[0, 0], [320, 0], 
+                     [320, 240],[0, 240]])
+    
+    M = cv2.getPerspectiveTransform(src, dst)
+    warped = cv2.warpPerspective(undist, M, img_size)
+    return warped
 
 def load_image(data_dir, image_file):
     """
@@ -18,7 +45,7 @@ def crop(image):
     """
     Crop the image (removing the sky at the top and the car front at the bottom)
     """
-    return image[100:-1, :, :] # remove the sky 
+    return image[100: -1, :, :] # remove the sky 
 
 
 def resize(image):
@@ -35,11 +62,12 @@ def rgb2yuv(image):
     return cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
 
 
-def preprocess(image):
+def preprocess(image, mtx, dist):
     """
     Combine all preprocess functions into one
     """
     image = crop(image)
+#    image = birds_eye(image, mtx, dist)
     image = resize(image)
     image = rgb2yuv(image)
     return image
@@ -61,7 +89,7 @@ def random_translate(image, steering_angle, range_x, range_y):
     """
     trans_x = range_x * (np.random.rand() - 0.5)
     trans_y = range_y * (np.random.rand() - 0.5)
-    steering_angle += trans_x * 0.006
+    steering_angle += trans_x * 0.01
     trans_m = np.float32([[1, 0, trans_x], [0, 1, trans_y]])
     height, width = image.shape[:2]
     image = cv2.warpAffine(image, trans_m, (width, height))
@@ -120,7 +148,7 @@ def augument(data_dir, center, steering_angle, range_x=100, range_y=5):
     return image, steering_angle
 
 
-def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_training):
+def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_training, mtx, dist):
     """
     Generate training image give image paths and associated steering angles
     """
@@ -132,15 +160,18 @@ def batch_generator(data_dir, image_paths, steering_angles, batch_size, is_train
             center = image_paths[index]
             steering_angle = steering_angles[index]
             # argumentation
-            if is_training and np.random.rand() < 0.6:
+            if is_training and np.random.rand() < 0.7:
                 image, steering_angle = augument(data_dir, center, steering_angle)
             else:
                 image = load_image(data_dir, center) 
             # add the image and steering angle to the batch
-            images[i] = preprocess(image)
+            images[i] = preprocess(image,mtx,dist)
             steers[i] = steering_angle
             i += 1
             if i == batch_size:
                 break
         yield images, steers
+
+
+
 

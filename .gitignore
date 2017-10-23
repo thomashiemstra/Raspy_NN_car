@@ -1,2 +1,6 @@
 IMG/
 *.txt
+*.h5
+*.npz
+*.csv
+test.py

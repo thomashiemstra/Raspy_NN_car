@@ -85,7 +85,7 @@ def send_commands(connection, ser):
     tempY = ser.read(2)
     temp = ser.read(2)
     
-    data[0] = struct.unpack('h',tempX)[0]
+    data[0] = struct.unpack('h',tempX)[0]*0.6
     data[1] = struct.unpack('h',tempY)[0]
     trigger = struct.unpack('h',temp)[0]
     
@@ -95,7 +95,7 @@ def send_commands(connection, ser):
     speed = int(data[0]) 
     steering = int(data[1]) - 492
 
-    fac = (map(steering,-492,531,-400,400))/400
+    fac = (map(steering,-492,531,-400,400))/600
     return trigger, speed, fac
 
 

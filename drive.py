@@ -4,7 +4,6 @@ import numpy as np
 import struct
 from PIL import Image
 import io
-import serial
 import pickle
 import utils
 from threading import Thread
@@ -28,6 +27,7 @@ class WebcamVideoStream:
     #recieve the video stream and turn it into a cv2 object
     def update(self, connection):
         print(connection)
+        mtx, dist = utils.load_config()
         try:
             while True:
                 if self.stopped:
@@ -45,12 +45,16 @@ class WebcamVideoStream:
                 image_stream.seek(0)
                 pil_image = Image.open(image_stream)
                 image = np.asarray(pil_image)
-                image = utils.preprocess(image)
+                
+#                self.disp = utils.birds_eye(image, mtx, dist)
+                
+                image = utils.preprocess(image, mtx, dist)
                 image = np.array([image])
                 
                 self.disp = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
                 self.frame = image
                 self.ready = True
+                sleep(0.01)
         except:
             pass
             
@@ -64,8 +68,6 @@ class WebcamVideoStream:
 
 
 def host_connections():
-    serial_connection = serial.Serial("COM11",115200)
-    
     host = '192.168.2.6' #ip of computer
     port = 8000
     
@@ -79,7 +81,7 @@ def host_connections():
     # start the connection that sends controlls to the car
     controll_connection, addr = server_socket.accept()
     print("got connection from",addr)
-    return video_connection, controll_connection, serial_connection
+    return video_connection, controll_connection
 
 def send_commands(connection, speed, fac):
     data = [0,0]
@@ -93,20 +95,18 @@ def send_commands(connection, speed, fac):
 
 if __name__ == "__main__":	
 
-    model = load_model('model.h5')
-    
-    video_connection, controll_connection, serial_connection = host_connections()
+    model = load_model('model/model.h5')
+    print("ready")
+    video_connection, controll_connection = host_connections()
     stream = WebcamVideoStream().start(video_connection)
-
+    
     try:
         while stream.loop:
             if(stream.ready):
 
                 image, disp = stream.read()
-                
                 steering_angle = float(model.predict(image, batch_size=1))
-                send_commands(controll_connection,100,steering_angle)
-                
+                send_commands(controll_connection, 100, steering_angle)                
                 cv2.namedWindow('image',cv2.WINDOW_NORMAL)
                 cv2.resizeWindow('image', 960,720)
                 cv2.imshow('image',disp)
@@ -122,5 +122,3 @@ if __name__ == "__main__":
         cv2.destroyAllWindows() 
         controll_connection.close()
         video_connection.close()
-        serial_connection.close()
-
