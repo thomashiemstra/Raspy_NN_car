@@ -85,19 +85,31 @@ def birds_eye(img, mtx, dist):
     warped = cv2.warpPerspective(undist, M, img_size)
     return warped
 
+def random_brightness(image):
+    """
+    Randomly adjust brightness of the image.
+    """
+    # HSV (Hue, Saturation, Value) is also called HSB ('B' for Brightness).
+    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+    ratio = 1.0 + 0.2 * (np.random.rand() - 0.5)
+    hsv[:,:,2] =  hsv[:,:,2] * ratio
+    return cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
 
 mtx,dist = load_config()    
 
 
-for i in range(0,500):
-    center = X[i]
-    image = load_image("IMG",center)
-    
-    #image = preprocess(image, mtx, dist)
-    
-    bird_image = birds_eye(image,mtx,dist)
-    cv2.imshow('image',bird_image)
-    cv2.waitKey(5)
+#for i in range(0,500):
+center = X[0]
+image = load_image("IMG",center)
+
+#image = preprocess(image, mtx, dist)
+
+shadow_image = random_brightness(image)
+
+bird_image = birds_eye(image,mtx,dist)
+
+cv2.imshow('image',shadow_image)
+cv2.waitKey(5)
 
 
 #f, (ax1, ax2) = plt.subplots(1, 2, figsize=(9,5))

@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*-
 import socket
 import cv2
 import numpy as np
@@ -6,12 +7,14 @@ from PIL import Image
 import io
 import pickle
 import utils
-from threading import Thread
+from threading import Thread, Lock
 from time import sleep
 from keras.models import load_model
 
 def map(x, in_min, in_max, out_min, out_max):
     return int((x-in_min) * (out_max-out_min) / (in_max-in_min) + out_min)
+
+frame_lock = Lock()
 
 #constanly updates the member variable "frame" and returns it when read() is called
 class WebcamVideoStream:
@@ -51,8 +54,11 @@ class WebcamVideoStream:
                 image = utils.preprocess(image, mtx, dist)
                 image = np.array([image])
                 
-                self.disp = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
-                self.frame = image
+                
+                
+                with frame_lock:
+                    self.disp = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+                    self.frame = image
                 self.ready = True
                 sleep(0.01)
         except:
@@ -64,11 +70,12 @@ class WebcamVideoStream:
         print("closed")
     
     def read(self):
-        return self.frame, self.disp
+        with frame_lock:
+            return self.frame, self.disp
 
 
 def host_connections():
-    host = '192.168.2.6' #ip of computer
+    host = '192.168.2.5' #ip of computer
     port = 8000
     
     server_socket = socket.socket()
@@ -95,7 +102,7 @@ def send_commands(connection, speed, fac):
 
 if __name__ == "__main__":	
 
-    model = load_model('model/model.h5')
+    model = load_model("model-017.h5")
     print("ready")
     video_connection, controll_connection = host_connections()
     stream = WebcamVideoStream().start(video_connection)

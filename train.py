@@ -39,13 +39,12 @@ def build_model():
 
     return model
 
-
 def train_model(model, X_train, X_valid, y_train, y_valid, 
-                data_dir = "IMG", batch_size = 500, nb_epoch = 20, samples_per_epoch = 50000, learning_rate = 1.0e-4):
+                data_dir = "IMG", batch_size = 1000, nb_epoch = 20, samples_per_epoch = 100000, learning_rate = 1.0e-4):
     
     mtx, dist = load_config()
     #Saves the best model so far.
-    checkpoint = ModelCheckpoint('model2-{epoch:03d}.h5',
+    checkpoint = ModelCheckpoint('model/model3-{epoch:03d}.h5',
                                  monitor='val_loss',
                                  verbose=0,
                                  save_best_only=True,
@@ -56,7 +55,7 @@ def train_model(model, X_train, X_valid, y_train, y_valid,
     # keras 2 has other ideas about certain things
     steps_per_epoch = samples_per_epoch/batch_size
 
-    v_steps = int(np.ceil(len(X_valid)/batch_size))
+    v_steps = 1 #int(np.ceil(len(X_valid)/batch_size))
 
     
     model.fit_generator(batch_generator(data_dir, X_train, y_train, batch_size, True, mtx, dist), 
@@ -72,7 +71,7 @@ data  = load_data()
 model = build_model()
 
 ##continue from previously trained model
-#model = load_model("model3-008.h5")
+model = load_model("model/model2-004.h5")
 
 train_model(model, *data)
 

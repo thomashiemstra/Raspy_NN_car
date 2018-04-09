@@ -66,8 +66,8 @@ def preprocess(image, mtx, dist):
     """
     Combine all preprocess functions into one
     """
-    image = crop(image)
-#    image = birds_eye(image, mtx, dist)
+#    image = crop(image)
+    image = birds_eye(image, mtx, dist)
     image = resize(image)
     image = rgb2yuv(image)
     return image
@@ -89,7 +89,7 @@ def random_translate(image, steering_angle, range_x, range_y):
     """
     trans_x = range_x * (np.random.rand() - 0.5)
     trans_y = range_y * (np.random.rand() - 0.5)
-    steering_angle += trans_x * 0.01
+    steering_angle += trans_x * 0.006
     trans_m = np.float32([[1, 0, trans_x], [0, 1, trans_y]])
     height, width = image.shape[:2]
     image = cv2.warpAffine(image, trans_m, (width, height))
@@ -102,9 +102,9 @@ def random_shadow(image):
     """
     # (x1, y1) and (x2, y2) forms a line
     # xm, ym gives all the locations of the image
-    x1, y1 = IMAGE_WIDTH * np.random.rand(), 0
-    x2, y2 = IMAGE_WIDTH * np.random.rand(), IMAGE_HEIGHT
-    xm, ym = np.mgrid[0:IMAGE_HEIGHT, 0:IMAGE_WIDTH]
+    x1, y1 = 320 * np.random.rand(), 0
+    x2, y2 = 320 * np.random.rand(), 240
+    xm, ym = np.mgrid[0:240, 0:320]
 
     # mathematically speaking, we want to set 1 below the line and zero otherwise
     # Our coordinate is up side down.  So, the above the line: 
@@ -130,7 +130,7 @@ def random_brightness(image):
     """
     # HSV (Hue, Saturation, Value) is also called HSB ('B' for Brightness).
     hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
-    ratio = 1.0 + 0.4 * (np.random.rand() - 0.5)
+    ratio = 1.0 + 0.2 * (np.random.rand() - 0.5)
     hsv[:,:,2] =  hsv[:,:,2] * ratio
     return cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
 
